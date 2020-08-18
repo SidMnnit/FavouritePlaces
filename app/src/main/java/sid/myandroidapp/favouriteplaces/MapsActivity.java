@@ -8,6 +8,7 @@ import androidx.fragment.app.FragmentActivity;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
@@ -15,6 +16,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdate;
@@ -25,10 +27,14 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.lang.reflect.Array;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+
+import static sid.myandroidapp.favouriteplaces.MainActivity.places;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,GoogleMap.OnMapLongClickListener {
 
@@ -114,7 +120,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Location placeLocation = new Location(LocationManager.GPS_PROVIDER);
             placeLocation.setLatitude(MainActivity.locations.get(intent.getIntExtra("placeNumber",0)).latitude);
             placeLocation.setLongitude(MainActivity.locations.get(intent.getIntExtra("placeNumber",0)).longitude);
-            centerMapOnLocation(placeLocation,MainActivity.places.get(intent.getIntExtra("placeNumber",0)));
+            centerMapOnLocation(placeLocation, places.get(intent.getIntExtra("placeNumber",0)));
         }
 
     }
@@ -143,9 +149,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         mMap.addMarker(new MarkerOptions().position(latLng).title(address));
 
-        MainActivity.places.add(address);
+        places.add(address);
         MainActivity.locations.add(latLng);
         MainActivity.arrayAdapter.notifyDataSetChanged();
+
+        SharedPreferences sharedPreferences = this.getSharedPreferences("sid.myandroidapp.favouriteplaces", Context.MODE_PRIVATE);
+        try {
+            ArrayList<String> latitudes = new ArrayList<String>();
+            ArrayList<String> longitudes = new ArrayList<String>();
+            for(LatLng coord : MainActivity.locations){
+                latitudes.add(Double.toString(coord.latitude));
+                longitudes.add(Double.toString(coord.longitude));
+            }
+            sharedPreferences.edit().putString( "places",ObjectSerializer.serialize(MainActivity.places)).apply();
+            sharedPreferences.edit().putString( "lats",ObjectSerializer.serialize(latitudes)).apply();
+            sharedPreferences.edit().putString( "lons",ObjectSerializer.serialize(longitudes)).apply();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         Toast.makeText(this, "Location Saved!", Toast.LENGTH_SHORT).show();
     }
 }
